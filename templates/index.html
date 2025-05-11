@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Knowledge Representation Graph</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #005f73;
+            --secondary-color: #0a9396;
+            --accent-color: #94d2bd;
+            --bg-color: #f0f0f0;
+            --text-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            margin: 0;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: auto;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .graph-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .graph-section img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            h2 {
+                font-size: 20px;
+                text-align: center;
+            }
+
+            form {
+                padding: 15px;
+            }
+
+            input, textarea, button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Knowledge Representation Graph</h2>
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/extract" enctype="multipart/form-data">
+        <input type="file" name="pdf" accept=".pdf"><br>
+        <input type="text" name="url" placeholder="Enter URL"><br>
+        <textarea name="text" rows="10" placeholder="Paste your text here"></textarea><br>
+        <button type="submit">Generate Graph</button>
+    </form>
+
+    {% if graph %}
+    <div class="graph-section">
+        <h3>Knowledge Graph:</h3>
+        <img src="{{ graph }}" alt="Knowledge Graph">
+    </div>
+    {% endif %}
+</body>
+</html>

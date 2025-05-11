@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+jinja2
+requests
+beautifulsoup4
+PyMuPDF
+spacy
+networkx
+matplotlib
