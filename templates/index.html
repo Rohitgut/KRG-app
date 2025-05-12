@@ -21,7 +21,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            padding: 20px;
+            /* padding: 20px; */
             margin: 0;
         }
 
@@ -87,6 +87,23 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.15);
         }
 
+        footer {
+            padding: 10px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            position: fixed;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--primary-color);
+            background-color: white;
+            border-top: 1px solid #ccc;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+
         @media (max-width: 600px) {
             body {
                 padding: 10px;
@@ -127,5 +144,10 @@
         <img src="{{ graph }}" alt="Knowledge Graph">
     </div>
     {% endif %}
+
+    <footer>
+    <p>&copy; Rohit Sharma (2401312)</p>
+    </footer>
+
 </body>
 </html>
