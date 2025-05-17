@@ -1,23 +1,19 @@
 from fastapi import FastAPI, UploadFile, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from bs4 import BeautifulSoup
 import requests, fitz
 import spacy, networkx as nx
-import matplotlib.pyplot as plt
 import os
+import matplotlib.pyplot as plt
 
-# Initialize FastAPI
 app = FastAPI()
 
-# Mount static directory for serving images
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Setup templates directory
 templates = Jinja2Templates(directory="templates")
-
-# Load spaCy English model
 nlp = spacy.load("en_core_web_sm")
 
 @app.get("/", response_class=HTMLResponse)
@@ -25,15 +21,9 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/extract")
-async def extract_content(
-    request: Request,
-    pdf: UploadFile = None,
-    url: str = Form(None),
-    text: str = Form(None)
-):
+async def extract_content(request: Request, pdf: UploadFile = None, url: str = Form(None), text: str = Form(None)):
     content = None
 
-    # Priority order: PDF > URL > Text
     if pdf and pdf.filename:
         file_data = await pdf.read()
         if file_data:
@@ -41,7 +31,7 @@ async def extract_content(
     elif url:
         content = extract_from_url(url)
     elif text:
-        content = text.strip()
+        content = text
 
     if not content:
         return templates.TemplateResponse("index.html", {
@@ -50,18 +40,14 @@ async def extract_content(
             "error": "Please provide valid input."
         })
 
-    # Build graph and save image
-    G = build_graph(content)
+    G = build_svo_adj_graph(content)
     output_file = os.path.join("static", "graph.png")
     visualize_graph(G, output_file)
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "graph": "/static/graph.png"  # Important: must be relative to app root
+        "graph": output_file
     })
-
-
-# ========== Helper Functions ==========
 
 def extract_pdf(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -72,19 +58,44 @@ def extract_from_url(url):
     soup = BeautifulSoup(page.text, "html.parser")
     return soup.get_text()
 
-def build_graph(text):
+def build_svo_adj_graph(text):
     doc = nlp(text)
-    G = nx.Graph()
+    G = nx.DiGraph()
+
     for sent in doc.sents:
-        ents = [ent.text for ent in sent.ents]
-        for i in range(len(ents)):
-            for j in range(i + 1, len(ents)):
-                G.add_edge(ents[i], ents[j])
+        for token in sent:
+            # Active: Subject-Verb-Object
+            if token.dep_ == "nsubj" and token.head.pos_ == "VERB":
+                obj = [child for child in token.head.children if child.dep_ == "dobj"]
+                if obj:
+                    G.add_edge(token.text, obj[0].text, label=token.head.text)
+
+            # Passive voice: Object-Verb-Subject (e.g., "The book was written by the author")
+            if token.dep_ == "nsubjpass" and token.head.pos_ == "VERB":
+                agent = [child for child in token.head.children if child.dep_ == "agent"]
+                if agent:
+                    agent_obj = [child for child in agent[0].children if child.dep_ == "pobj"]
+                    if agent_obj:
+                        G.add_edge(token.text, agent_obj[0].text, label=token.head.text)
+
+            # Adjective modifier via copula
+            if token.dep_ == "attr":
+                subj = [child for child in token.head.children if child.dep_ == "nsubj"]
+                if subj:
+                    G.add_edge(subj[0].text, token.text, label=token.head.text)
+
+            # Adjective directly modifying a noun
+            if token.dep_ == "amod" and token.head.pos_ == "NOUN":
+                G.add_edge(token.head.text, token.text, label="is")
+
     return G
 
 def visualize_graph(G, output_file):
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(12, 12))
     pos = nx.spring_layout(G, k=0.5)
-    nx.draw(G, pos, with_labels=True, node_size=5000, node_color="skyblue", font_size=10)
-    plt.savefig(output_file, bbox_inches='tight')
+    edge_labels = nx.get_edge_attributes(G, 'label')
+
+    nx.draw(G, pos, with_labels=True, node_size=3000, node_color="lightblue", font_size=10, arrows=True)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', font_size=9)
+    plt.savefig(output_file)
     plt.close()
